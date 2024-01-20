@@ -7,7 +7,7 @@ services:
       - node.name=node-master
       - cluster.name=es-docker-cluster
       - cluster.initial_master_nodes=node-master
-      - discovery.seed_hosts=elasticsearch-slave
+      - discovery.seed_hosts=es-node1,es-node2
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
@@ -34,21 +34,19 @@ services:
           cpus: '1.0'
           memory: '1GB'
 
-  elasticsearch-slave:
-    container_name: elasticsearch-slave
+  es-node1:
+    container_name: es-node1
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
     environment:
-      - node.name=node-slave
+      - node.name=node-1
       - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=elasticsearch-master
+      - discovery.seed_hosts=elasticsearch-master,es-node2
       - cluster.initial_master_nodes=node-master
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
     networks:
       - elastic
-    ports:
-      - 9100:9100
     ulimits:
       memlock:
         soft: -1
@@ -68,6 +66,37 @@ services:
           cpus: '1.0'
           memory: '600MB'
 
+  es-node2:
+    container_name: es-node2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.4
+    environment:
+      - node.name=node-2
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=elasticsearch-master,es-node1
+      - cluster.initial_master_nodes=node-master
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ./docker-data/esdata-node2:/usr/share/elasticsearch/data
+    user: "1000:1000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: '1GB'
+        reservations:
+          cpus: '1.0'
+          memory: '600MB'
 
   # kibana
   kibana:
